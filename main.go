@@ -11,38 +11,6 @@ import (
 	"leet-term/appdata"
 )
 
-// appDir, err := appdata.EnsureAppDir()
-// if err != nil {
-// 	fmt.Print("error: EnsureAppDir")
-// 	return
-// }
-// cfg, found, err := appdata.LoadConfig(appDir)
-// if err != nil {
-// 	fmt.Print("error: LoadConfig")
-// 	return
-// }
-//
-// if !found || appdata.ValidateConfig(cfg) != nil {
-// 	cfg, err = initflow.RunInit(appDir)
-// 	if err != nil {
-// 		fmt.Print("error: RunInit")
-// 		return
-// 	}
-// }
-//
-// state, err := appdata.LoadOrCreateState(appDir)
-// if err != nil {
-// 	fmt.Print("error: LoadOrCreateState")
-// 	return
-// }
-//
-// username := cfg.Username
-// profile, err := api.GetProfileFull(username)
-// if err != nil {
-// 	log.Fatal(err)
-// }
-//
-
 func main() {
 	if len(os.Args) < 2 {
 		printUsage()
@@ -84,21 +52,23 @@ func handleDaily(lang string) {
 		return
 	}
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println("error getting cwd: %w", err)
+	}
+
 	in := bufio.NewReader(os.Stdin)
-	fmt.Print("Save to? [.] ")
+	fmt.Printf("Save to?\nCurrent Directory: %s ", cwd)
 	input, _ := in.ReadString('\n')
 	input = strings.TrimSpace(input)
+
 	if input == "" {
 		input = "."
 	}
 
 	saveDir := input
 	if input == "." {
-		saveDir, err = os.Getwd()
-		if err != nil {
-			fmt.Println("could not get current directory:", err)
-			return
-		}
+		saveDir = cwd
 	} 
 
 	if err := appdata.SaveProblem(saveDir, p, lang); err != nil {

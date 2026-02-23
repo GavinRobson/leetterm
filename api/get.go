@@ -35,10 +35,6 @@ func GetProfileFull(username string) (*types.Profile, error) {
 	return &profile, nil
 }
 
-func GetGetProblem() {
-	
-}
-
 func GetProblem(titleSlug string) (*types.Problem, error) {
 	url := fmt.Sprintf(URL + "/select/raw?titleSlug=%s", titleSlug)
 
@@ -83,4 +79,38 @@ func GetDailyProblem(lang string) (*types.Problem, error) {
 	}
 
 	return &env.Active, nil
+}
+
+func GetTotalQuestions() (*types.TotalQuestions, error) {
+	url := fmt.Sprintf(URL + "/problems?limit=1")
+
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	var total types.TotalQuestions
+
+	err = json.NewDecoder(resp.Body).Decode(&total)
+	if err != nil {
+		return nil, err
+	}
+
+	return &total, nil
+}
+
+func GetRandomProblem(difficulty string) (*types.Problem, error) {
+	// total, err := GetTotalQuestions()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//
+	// randomInt := rand.IntN(total.Count)
+	return &types.Problem{}, types.Errors.NoConfigFound
+
 }

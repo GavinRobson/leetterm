@@ -36,3 +36,7 @@ type CodeSnippet struct {
 type DailyEnvelope struct {
 	Active Problem `json:"activeDailyCodingChallengeQuestion"`
 }
+
+type TotalQuestions struct {
+	Count int `json:"totalQuestions"`
+}
