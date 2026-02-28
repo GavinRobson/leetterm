@@ -1,87 +1,54 @@
 package main
 
 import (
-	"bufio"
-	"flag"
+	"context"
 	"fmt"
+	"leet-term/app"
+	"leet-term/config"
+	"leet-term/supabase"
+	"leet-term/types"
 	"os"
-	"strings"
-
-	"leet-term/api"
-	"leet-term/appdata"
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	config.LoadEnv()
+	ctx := context.Background()
+
+	supabase.LoadClient()
+
+	args := os.Args
+	if len(args) < 2 {
 		printUsage()
 		return
 	}
 
-	switch os.Args[1] {
-	case "daily":
-		dailyCmd := flag.NewFlagSet("daily", flag.ExitOnError)
-		lang := dailyCmd.String("lang", "cpp", "Preferred language")
-		_ = dailyCmd.Parse(os.Args[2:])
+	var flags []types.Flag
+	flags = append(flags, types.Flag{
+		Flag: "daily",
+		Func: app.Daily,
+	})
+	flags = append(flags, types.Flag{
+		Flag: "get",
+		Func: app.Get,
+	})
+	flags = append(flags, types.Flag{
+		Flag: "config",
+		Func: app.Config,
+	})
+	flags = append(flags, types.Flag{
+		Flag: "count",
+		Func: app.Count,
+	})
+	flags = append(flags, types.Flag{
+		Flag: "test",
+		Func: app.Test,
+	})
+	flags = append(flags, types.Flag{
+		Flag: "rand",
+		Func: app.Rand,
+	})
 
-		handleDaily(*lang)
-
-	case "get":
-		getCmd := flag.NewFlagSet("get", flag.ExitOnError)
-		lang := getCmd.String("lang", "cpp", "Preferred language")
-		_ = getCmd.Parse(os.Args[2:])
-
-		args := getCmd.Args()
-		if len(args) < 1 {
-			fmt.Println("Error: missing problem id or titleSlug")
-			fmt.Println("Usage: leetterm get <problem> --lang <language>")
-			os.Exit(1)
-		}
-
-		handleGet(args[0], *lang)
-
-	default:
-		fmt.Println("Unknown command:", os.Args[1])
-		printUsage()
-	}
-}
-
-func handleDaily(lang string) {
-	p, err := api.GetDailyProblem(lang)
-	if err != nil {
-		fmt.Println("error getting random problem: %w", err)
-		return
-	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Println("error getting cwd: %w", err)
-	}
-
-	in := bufio.NewReader(os.Stdin)
-	fmt.Printf("Save to?\nCurrent Directory: %s ", cwd)
-	input, _ := in.ReadString('\n')
-	input = strings.TrimSpace(input)
-
-	if input == "" {
-		input = "."
-	}
-
-	saveDir := input
-	if input == "." {
-		saveDir = cwd
-	} 
-
-	if err := appdata.SaveProblem(saveDir, p, lang); err != nil {
-		fmt.Println("save failed:", err)
-		return
-	}
-
-	fmt.Printf("Saved to [%s]", saveDir)
-}
-
-func handleGet(problem string, lang string) {
-	fmt.Println("Fetching problem", problem)
-	fmt.Println("Language:", lang)
+	app.HandleFlags(flags, args, ctx)
 }
 
 func printUsage() {

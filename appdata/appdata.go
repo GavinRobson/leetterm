@@ -1,9 +1,12 @@
 package appdata
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"leet-term/api"
+	"leet-term/log"
 	"leet-term/types"
 	"os"
 	"path/filepath"
@@ -13,7 +16,7 @@ import (
 type Config struct {
 	Version int `json:"version"`
 	Username string `json:"username"`
-	PreferredLang string `json:"preferred_lang"`
+	PreferredLang int `json:"preferred_lang"`
 	DefaultWorkspace string `json:"default_workspace"`
 }
 
@@ -63,6 +66,23 @@ func LoadConfig(appDir string) (*Config, bool, error) {
 	return &c, true, nil
 }
 
+func LoadLang() (int, error) {
+	appDir, err := AppDir()
+	if err != nil {
+		return -1, err
+	}
+
+	cfg, found, err := LoadConfig(appDir)
+	if err != nil {
+		return -1, err
+	}
+	if !found {
+		return -1, errors.New("config not found")
+	}
+
+	return cfg.PreferredLang, nil
+}
+
 func SaveConfig(appDir string, c *Config) error {
 	c.Version = 1
 	p := configPath(appDir)
@@ -78,11 +98,63 @@ func SaveConfig(appDir string, c *Config) error {
 	return os.Rename(tmp, p)
 }
 
+func SaveLang(appDir string, lang string) error {
+	ctx := context.Background()
+	p := configPath(appDir)
+	langs, err := api.GetLanguages(ctx)
+	if err != nil {
+		return err
+	}
+
+	var prefLang int
+
+	for _, l := range langs {
+		fmt.Println(log.Struct(l))
+		if lang == l.Name || lang == l.Slug {
+			prefLang = l.ID
+			break
+		} 
+	}
+
+	cfg, found, err := LoadConfig(appDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			SaveConfig(appDir, &Config{PreferredLang: prefLang})
+		}
+		return err
+	}
+
+	if !found {
+		SaveConfig(appDir, &Config{PreferredLang: prefLang})
+	}
+
+	cfg.PreferredLang = prefLang
+
+	fmt.Println(cfg)
+
+	tmp := p + ".tmp"
+	b, err := json.MarshalIndent(cfg, "", " ")
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(tmp, b, 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp, p)
+}
+
+func ValidateLang(c *Config) error {
+	if c.PreferredLang <= 0 {
+		return errors.New("missing preferred_lang")
+	}
+	return nil
+}
+
 func ValidateConfig(c *Config) error {
 	if c.Username == "" {
 		return errors.New("missing username")
 	}
-	if c.PreferredLang == "" {
+	if c.PreferredLang <= 0 {
 		return errors.New("missing preferred_lang")
 	}
 	if c.DefaultWorkspace == "" {

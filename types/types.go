@@ -1,7 +1,22 @@
 // Package types defines type for the program
 package types
 
-import "time"
+import (
+	"context"
+	"time"
+)
+
+type Flag struct {
+	Flag string
+	Func func(ctx context.Context)(error)
+}
+
+type Language struct {
+	ID int `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+	File string `json:"file"`
+}
 
 type Profile struct {
 	Username string `json:"username"`
@@ -18,19 +33,20 @@ type Problem struct {
 }
 
 type Question struct {
-	ID string `json:"questionId"`
+	ID int `json:"id"`
 	Title string `json:"title"`
 	TitleSlug string `json:"titleSlug"`
 	Difficulty string `json:"difficulty"`
 	IsPaidOnly bool `json:"isPaidOnly"`
-	ContentHTML string `json:"content"`
-	CodeSnippets []CodeSnippet `json:"codeSnippets"`
+	Content string `json:"content"`
+	CodeSnippet []CodeSnippet `json:"codeSnippets"`
 }
 
 type CodeSnippet struct {
-	Lang string `json:"lang"`
-	LangSlug string `json:"langSlug"`
+	ID int `json:"id"`
 	Code string `json:"code"`
+	QuestionID int `json:"questionId"`
+	LangID int `json:"langId"`
 }
 
 type DailyEnvelope struct {

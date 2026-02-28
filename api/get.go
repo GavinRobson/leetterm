@@ -2,18 +2,43 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"leet-term/supabase"
 	"leet-term/types"
 	"net/http"
 )
 
-const URL = "https://alfa-leetcode-api.onrender.com"
+const ALFA_URL = "https://alfa-leetcode-api.onrender.com"
 
 var client = &http.Client{}
 
+func GetDailyProblem() (*types.Question, error) {
+	url := fmt.Sprintf(ALFA_URL+"/daily")
+
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	var question types.Question
+
+	err = json.NewDecoder(resp.Body).Decode(&question)
+	if err != nil {
+		return nil, err
+	}
+
+	return &question, nil
+}
+
 func GetProfileFull(username string) (*types.Profile, error) {
-	url := fmt.Sprintf(URL + "/%s", username)	
+	url := fmt.Sprintf(ALFA_URL+"/%s", username)
 
 	resp, err := client.Get(url)
 	if err != nil {
@@ -35,82 +60,33 @@ func GetProfileFull(username string) (*types.Profile, error) {
 	return &profile, nil
 }
 
-func GetProblem(titleSlug string) (*types.Problem, error) {
-	url := fmt.Sprintf(URL + "/select/raw?titleSlug=%s", titleSlug)
-
-	resp, err := client.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bad status: %s", resp.Status)
-	}
-
-	var problem types.Problem
-
-	err = json.NewDecoder(resp.Body).Decode(&problem)
+func GetQuestionByID(id string, lang int, ctx context.Context) (*types.Question, error) {
+	q, err := supabase.Supabase.Question.Find(
+		ctx, 
+		supabase.Eq("id", id),
+		supabase.Eq("CodeSnippet.langId", lang),
+		supabase.Select("*", "codeSnippets:CodeSnippet(*)"),
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	return &problem, nil
+	return q, nil
 }
 
-func GetDailyProblem(lang string) (*types.Problem, error) {
-	url := fmt.Sprintf(URL + "/daily/raw")
-	
-	resp, err := client.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bad status: %s", resp.Status)
-	}
-
-	var env types.DailyEnvelope
-
-	err = json.NewDecoder(resp.Body).Decode(&env)
+func GetLanguages(ctx context.Context) ([]types.Language, error) {
+	l, err := supabase.Supabase.Language.FindAll(ctx, supabase.Select("*"))
 	if err != nil {
 		return nil, err
 	}
 
-	return &env.Active, nil
+	return l, nil
 }
 
-func GetTotalQuestions() (*types.TotalQuestions, error) {
-	url := fmt.Sprintf(URL + "/problems?limit=1")
-
-	resp, err := client.Get(url)
+func GetCount(ctx context.Context) (int, error) {
+	count, err := supabase.Supabase.Question.Count(ctx)
 	if err != nil {
-		return nil, err
+		return 0, nil
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bad status: %s", resp.Status)
-	}
-
-	var total types.TotalQuestions
-
-	err = json.NewDecoder(resp.Body).Decode(&total)
-	if err != nil {
-		return nil, err
-	}
-
-	return &total, nil
-}
-
-func GetRandomProblem(difficulty string) (*types.Problem, error) {
-	// total, err := GetTotalQuestions()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	//
-	// randomInt := rand.IntN(total.Count)
-	return &types.Problem{}, types.Errors.NoConfigFound
-
+	return count, nil
 }

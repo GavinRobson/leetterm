@@ -3,8 +3,11 @@ package initflow
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"leet-term/appdata"
+	"leet-term/supabase"
+	"leet-term/types"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,7 +21,7 @@ func readKey() (byte, error) {
 	return buf[0], err
 }
 
-func pickPreferredLang(options []string) (string, error) {
+func pickPreferredLang(options []types.Language) (string, error) {
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err
@@ -26,19 +29,21 @@ func pickPreferredLang(options []string) (string, error) {
 	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
 	selected := 0
-	
+
 	fmt.Print("\033[s")
 
 	for {
 		fmt.Print("\033[u")
 		fmt.Println("Preferred language:")
 
-		 for i, opt := range options {
+		fmt.Print("\033[2K\r")
+		for i, opt := range options {
 			if i == selected {
-				fmt.Printf("> %s\n", opt)
+				fmt.Printf("> %s\n", opt.Name)
 			} else {
-				fmt.Printf("  %s\n", opt)
+				fmt.Printf("  %s\n", opt.Name)
 			}
+			fmt.Print("\033[2K\r")
 		}
 
 		key, _ := readKey()
@@ -54,7 +59,7 @@ func pickPreferredLang(options []string) (string, error) {
 			}
 		case '\r', '\n':
 			fmt.Println()
-			return options[selected], nil
+			return options[selected].Name, nil
 		case 3:
 			return "", fmt.Errorf("init cancelled")
 		}
@@ -62,18 +67,24 @@ func pickPreferredLang(options []string) (string, error) {
 }
 
 func RunInit(appDir string) (*appdata.Config, error) {
+	ctx := context.Background()
 	in := bufio.NewReader(os.Stdin)
 
 	fmt.Print("LeetCode username: ")
 	username, _ := in.ReadString('\n')
 	username = strings.TrimSpace(username)
 
-	options := []string{"Javascript", "Go", "Rust"}
+	options, err := supabase.Supabase.Language.FindAll(ctx, supabase.Order("id", true))
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
 	lang, err := pickPreferredLang(options)
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	cwd, _ := os.Getwd()
 	def := filepath.Join(cwd, "leetcode")
 
@@ -88,8 +99,8 @@ func RunInit(appDir string) (*appdata.Config, error) {
 	_ = os.MkdirAll(ws, 0o755)
 
 	cfg := &appdata.Config{
-		Username: username,
-		PreferredLang: lang,
+		Username:         username,
+		PreferredLang:    lang,
 		DefaultWorkspace: ws,
 	}
 
