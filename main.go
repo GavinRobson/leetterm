@@ -22,32 +22,36 @@ func main() {
 		return
 	}
 
-	var flags []types.Flag
-	flags = append(flags, types.Flag{
-		Flag: "daily",
-		Func: app.Daily,
-	})
-	flags = append(flags, types.Flag{
-		Flag: "get",
-		Func: app.Get,
-	})
-	flags = append(flags, types.Flag{
-		Flag: "config",
-		Func: app.Config,
-	})
-	flags = append(flags, types.Flag{
-		Flag: "count",
-		Func: app.Count,
-	})
-	flags = append(flags, types.Flag{
-		Flag: "test",
-		Func: app.Test,
-	})
-	flags = append(flags, types.Flag{
-		Flag: "rand",
-		Func: app.Rand,
-	})
-
+	flags := []types.Flag{
+		{
+			Flag: "daily",
+			Func: app.Daily,
+		},
+		{
+			Flag: "get",
+			Func: app.Get,
+		},
+		{
+			Flag: "list",
+			Func: app.List,
+		},
+		{
+			Flag: "config",
+			Func: app.Config,
+		},
+		{
+			Flag: "count",
+			Func: app.Count,
+		},
+		{
+			Flag: "test",
+			Func: app.Test,
+		},
+		{
+			Flag: "rand",
+			Func: app.Rand,
+		},
+	}
 	app.HandleFlags(flags, args, ctx)
 }
 

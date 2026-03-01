@@ -6,11 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"leet-term/api"
-	"leet-term/log"
 	"leet-term/types"
 	"os"
 	"path/filepath"
-	"time"
+	markdown "github.com/JohannesKaufmann/html-to-markdown"
 )
 
 type Config struct {
@@ -106,14 +105,19 @@ func SaveLang(appDir string, lang string) error {
 		return err
 	}
 
-	var prefLang int
+	prefLang := -1
 
 	for _, l := range langs {
-		fmt.Println(log.Struct(l))
 		if lang == l.Name || lang == l.Slug {
 			prefLang = l.ID
 			break
 		} 
+	}
+
+	if prefLang == -1 {
+		fmt.Printf("Language not recognized: %s\n", lang)
+		printLangs(langs)
+		return errors.New("langage not found")
 	}
 
 	cfg, found, err := LoadConfig(appDir)
@@ -130,8 +134,6 @@ func SaveLang(appDir string, lang string) error {
 
 	cfg.PreferredLang = prefLang
 
-	fmt.Println(cfg)
-
 	tmp := p + ".tmp"
 	b, err := json.MarshalIndent(cfg, "", " ")
 	if err != nil {
@@ -141,6 +143,13 @@ func SaveLang(appDir string, lang string) error {
 		return err
 	}
 	return os.Rename(tmp, p)
+}
+
+func printLangs(langs []types.Language) {
+	fmt.Println("Accepted Languages:")
+	for _, lang := range langs {
+		fmt.Println(lang.Name)
+	}
 }
 
 func ValidateLang(c *Config) error {
@@ -197,25 +206,49 @@ func SaveState(appDir string, s *State) error {
 	return os.Rename(tmp, p)
 }
 
-func SaveProblem(saveDir string, p *types.Problem, lang string) error {
-	p.CreatedAt = time.Now()
-	p.UpdatedAt = time.Now()
-
-	path := filepath.Join(saveDir, p.Question.TitleSlug, lang)
-
-	if err := os.MkdirAll(path, 0o755); err != nil {
-		return err
-	}
-
-	file := "problem." + lang
-	filename := filepath.Join(path, file)
-
-	b, err := json.MarshalIndent(p, "", " ")
+func SaveQuestion(ctx context.Context, saveDir string, q *types.Question, lang int) error {
+	language, err := api.GetLanguageByID(ctx, lang)
 	if err != nil {
 		return err
 	}
 
-	if err := os.WriteFile(filename, b, 0644); err != nil {
+	path := filepath.Join(saveDir, q.TitleSlug, language.Slug)
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		return err
+	}
+
+	filename := filepath.Join(path, "question"+language.File)
+
+	code := q.CodeSnippet[0].Code
+	if err := os.WriteFile(filename, []byte(code), 0o644); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func SaveDirection(ctx context.Context, saveDir string, q *types.Question) error {
+	path := filepath.Join(saveDir, q.TitleSlug)
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		return err
+	}
+
+	filename := filepath.Join(path, "README.md")
+
+	converter := markdown.NewConverter("", true, nil)
+	md, err := converter.ConvertString(q.Content)
+	if err != nil {
+		return err
+	}
+
+	md = fmt.Sprintf("# %s\n\n**Difficulty:** %s\n\n%s",
+		q.Title,
+		q.Difficulty,
+		md,
+	)
+
+
+	if err := os.WriteFile(filename, []byte(md), 0o644); err != nil {
 		return err
 	}
 

@@ -3,7 +3,6 @@ package types
 
 import (
 	"context"
-	"time"
 )
 
 type Flag struct {
@@ -25,13 +24,6 @@ type Profile struct {
 	Ranking int `json:"ranking"`
 }
 
-type Problem struct {
-	Question Question `json:"question"`
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
 type Question struct {
 	ID int `json:"id"`
 	Title string `json:"title"`
@@ -47,10 +39,6 @@ type CodeSnippet struct {
 	Code string `json:"code"`
 	QuestionID int `json:"questionId"`
 	LangID int `json:"langId"`
-}
-
-type DailyEnvelope struct {
-	Active Problem `json:"activeDailyCodingChallengeQuestion"`
 }
 
 type TotalQuestions struct {

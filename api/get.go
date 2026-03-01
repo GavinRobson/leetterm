@@ -90,3 +90,12 @@ func GetCount(ctx context.Context) (int, error) {
 	}
 	return count, nil
 }
+
+func GetLanguageByID(ctx context.Context, id int) (*types.Language, error) {
+	l, err := supabase.Supabase.Language.Find(ctx, supabase.Eq("id", id))
+	if err != nil {
+		return nil, err
+	}
+
+	return l, nil
+}

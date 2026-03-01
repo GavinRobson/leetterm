@@ -27,7 +27,6 @@ func (c *Client) selectJSON(ctx context.Context, table string, dest any, opts ..
 	if enc := q.params.Encode(); enc != "" {
 		u += "?" + enc
 	}
-	fmt.Println(u)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
 	if err != nil {
